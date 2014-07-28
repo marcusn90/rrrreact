@@ -1,1 +1,136 @@
-TODODOOOOM
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Address book on ReactJS</title>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/react/0.10.0/react.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/react/0.10.0/JSXTransformer.js"></script>
+</head>
+<body>
+  <div id="content"></div>
+  <script type="text/jsx">
+    /** @jsx React.DOM */
+    var _albums = [
+      {id:1,name: 'Meteora'},
+      {id:2,name: 'Beg for mercy'}
+    ];
+    var Dispatcher = {
+      
+    };
+    var Store = {
+      getAlbums: function () {
+        return _albums;
+      },
+      addAlbum: function (alb) {
+        var aLength = _albums.length;
+        var maxId = aLength ? _albums[0].id : 1;
+        for (var i=0; i < aLength; i++) {
+          if ( _albums[i].id > maxId ) {
+            maxId = _albums[i].id;
+          }
+        }
+        alb.id = maxId + 1;
+        _albums.push(alb);
+      },
+      removeAlbum: function (id) {
+        var aLength = _albums.length;
+        for (var i = 0; i < aLength; i++) {
+          if ( _albums[i].id === id ) {
+            _albums.splice(i,1);
+            return;
+          }
+        }
+      },
+      processEvent: function (event, data) {
+        switch (event) {
+          case 'add':
+            this.addAlbum(data);
+            break;
+          case 'remove':
+            this.removeAlbum(data);
+            break;
+        }
+        this.emitChange();
+      },
+      changeListeners: [],
+      addChangeListener: function (cb) {
+        this.changeListeners.push(cb);
+      },
+      emitChange: function () {
+        for (var i=0; i<this.changeListeners.length; i++) {
+          this.changeListeners[i]();
+        }
+      }
+    };
+    var AlbumListItem = React.createClass({
+      _removeAlbum: function () {
+        if (this.props.albumData) {
+          Store.processEvent('remove', this.props.albumData.id);
+        }
+      },
+      render: function () {
+        return (
+          <li className="album-list-item {this.props.albumData.name}">
+            {this.props.albumData['name']}
+            <span onClick={this._removeAlbum}>         -</span>
+          </li>
+        );
+      }
+    });
+    var AlbumsList = React.createClass({
+      getInitialState: function () {
+        return {
+          albums: Store.getAlbums()
+        }
+      },
+      componentWillMount: function () {
+        var that = this;
+        Store.addChangeListener(function () {
+          that.setState({
+            albums: Store.getAlbums()
+          });
+        });
+      },
+      render: function () {
+        return (
+          <div>
+            <ul className="albums-list">
+              {this.state.albums.map(function (a) {
+                return (
+                  <AlbumListItem key={a.id} albumData={a} />
+                );
+              })}
+            </ul>
+            <AddAlbum />
+          </div>
+        );
+      }
+    });
+    var AddAlbum = React.createClass({
+      _addAlb: function (e) {
+        e.preventDefault();
+        var aName = this.refs.albName.getDOMNode().value;
+        console.log(aName);
+        if ( aName != '' ) {
+          Store.processEvent('add',{name:aName});
+          this.refs.albName.getDOMNode().value = '';
+        }
+      },
+      render: function () {
+        return (
+          <div>
+              <form action="" onSubmit={this._addAlb}>
+                <input name="albName" ref="albName"/>
+                <button>Add</button>
+              </form>
+          </div>
+        );
+      }
+    });
+    React.renderComponent(
+      <AlbumsList />,
+      document.getElementById('content')
+    );
+  </script>
+</body>
+</html>
